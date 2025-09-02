@@ -110,7 +110,27 @@ python -m scripts.delete_db
 ---
 
 ## Usage
-
+### Download repo
+Clone your repository or download the zip and extract it
+```
+git clone https://github.com/vamartid/restful_swapi_crud
+cd restful_swapi_crud
+```
+### Create enviroment and install dependencies
+Assuming your repo contains environment.yml:
+```
+conda env create -f environment.yml
+```
+- This will create a Conda environment with the name specified inside the YAML.
+- All listed packages will be installed automatically.
+  - Optional: if you want to give a custom environment name:
+    ```
+    conda env create -f environment.yml -n swapi_api
+    ```
+- Activate env
+```
+conda activate swapi_api
+```
 ### Start FastAPI app
 - Without `.ini`:
 ```bash
