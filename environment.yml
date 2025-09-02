@@ -1,0 +1,14 @@
+name: swapiapi
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - uvicorn
+  - fastapi
+  - pytest
+  - pymysql
+  - sqlalchemy
+  - httpx
+  - coverage
+  - requests
+prefix: C:\tools\miniconda3\envs\swapiapi
