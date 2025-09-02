@@ -6,31 +6,33 @@ from app.db_exceptions import handle_db_exception
 import requests
 
 # -------------------- BASE --------------------
-
 SWAPI_BASE = "https://swapi.info/api"
+"""
+Base URL for SWAPI endpoints.
+"""
 
 # -------------------- Helpers --------------------
-
 def fetch_from_swapi(endpoint: str, retries: int = 3, delay: int = 2, fail_fast: bool = True):
     """
     Fetch data from SWAPI with retries and error handling.
 
     Args:
-        endpoint (str): SWAPI endpoint, e.g., "people"
-        retries (int): number of retry attempts
-        delay (int): delay between retries in seconds
-        fail_fast (bool): if True, raises HTTPException on failure (for FastAPI)
-                          if False, returns empty list (for scripts)
+        endpoint (str): SWAPI endpoint, e.g., "people", "films", "starships"
+        retries (int): Number of retry attempts
+        delay (int): Delay between retries in seconds
+        fail_fast (bool): If True, raises HTTPException on failure (for FastAPI routes)
+                          If False, returns empty list (for scripts)
 
     Returns:
-        list: list of SWAPI items
+        list: List of SWAPI items
 
     Raises:
-        HTTPException: if fetching fails and fail_fast is True
+        HTTPException: If fetching fails and fail_fast is True
     """
     import time
     import json
     from fastapi import HTTPException
+
     url = f"{SWAPI_BASE}/{endpoint}"
     for attempt in range(1, retries + 1):
         try:
@@ -51,8 +53,22 @@ def fetch_from_swapi(endpoint: str, retries: int = 3, delay: int = 2, fail_fast:
                     return []
             time.sleep(delay)
 
-
 def store_objects(db: Session, model_class, data_list, unique_field):
+    """
+    Store a list of objects into the database with uniqueness check.
+
+    Args:
+        db (Session): SQLAlchemy database session
+        model_class: SQLAlchemy model class to store
+        data_list (list): List of dicts containing object data
+        unique_field (str): Field to check uniqueness
+
+    Returns:
+        None
+
+    Raises:
+        Exception: If database commit fails
+    """
     added_count = 0
     try:
         for data in data_list:
@@ -68,11 +84,26 @@ def store_objects(db: Session, model_class, data_list, unique_field):
         raise
 
 # -------------------- Characters --------------------
-
 def fetch_characters():
+    """
+    Fetch characters from SWAPI.
+
+    Returns:
+        list: List of character dicts
+    """
     return fetch_from_swapi("people")
 
 def store_characters(db: Session, characters_data):
+    """
+    Store characters into the database.
+
+    Args:
+        db (Session): Database session
+        characters_data (list): List of character dicts
+
+    Returns:
+        None
+    """
     processed = []
     for c in characters_data:
         processed.append({
@@ -83,11 +114,26 @@ def store_characters(db: Session, characters_data):
     store_objects(db, Character, processed, "name")
 
 # -------------------- Films --------------------
-
 def fetch_films():
+    """
+    Fetch films from SWAPI.
+
+    Returns:
+        list: List of film dicts
+    """
     return fetch_from_swapi("films")
 
 def store_films(db: Session, films_data):
+    """
+    Store films into the database.
+
+    Args:
+        db (Session): Database session
+        films_data (list): List of film dicts
+
+    Returns:
+        None
+    """
     processed = []
     for f in films_data:
         processed.append({
@@ -98,11 +144,26 @@ def store_films(db: Session, films_data):
     store_objects(db, Film, processed, "title")
 
 # -------------------- Starships --------------------
-
 def fetch_starships():
+    """
+    Fetch starships from SWAPI.
+
+    Returns:
+        list: List of starship dicts
+    """
     return fetch_from_swapi("starships")
 
 def store_starships(db: Session, starships_data):
+    """
+    Store starships into the database.
+
+    Args:
+        db (Session): Database session
+        starships_data (list): List of starship dicts
+
+    Returns:
+        None
+    """
     processed = []
     for s in starships_data:
         processed.append({
@@ -113,8 +174,16 @@ def store_starships(db: Session, starships_data):
     store_objects(db, Starship, processed, "name")
 
 # -------------------- Relationship Filler --------------------
-
 def fill_relationships(db: Session):
+    """
+    Fill many-to-many relationships between characters, films, and starships.
+
+    Args:
+        db (Session): Database session
+
+    Returns:
+        None
+    """
     try:
         characters = db.query(Character).all()
         films = db.query(Film).all()

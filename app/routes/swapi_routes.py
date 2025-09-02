@@ -12,7 +12,12 @@ LOG_FETCHED_OBJECTS = True  # Set to False to disable logging
 
 # -------------------- Decorator --------------------
 def safe_route(func):
-    """Wrap route functions with try/except + logging + validation."""
+    """
+    Decorator for route functions to add:
+    - try/except error handling
+    - logging for errors and empty results
+    - input validation for skip/limit parameters
+    """
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -48,6 +53,12 @@ router = APIRouter(prefix="/swapi", tags=["SWAPI"])
 @router.post("/sync/all")
 @safe_route
 def sync_all_endpoint(db: Session = Depends(get_db)):
+    """
+    Sync all SWAPI resources into the database.
+
+    - **db**: Database session (Dependency Injection)
+    - **Returns**: Message indicating successful sync
+    """
     sync_all(db)
     return {"message": "All SWAPI data synced successfully"}
 
@@ -55,6 +66,12 @@ def sync_all_endpoint(db: Session = Depends(get_db)):
 @router.post("/sync/characters")
 @safe_route
 def sync_characters(db: Session = Depends(get_db)):
+    """
+    Fetch characters from SWAPI and store them in the database.
+
+    - **db**: Database session
+    - **Returns**: Message with number of characters synced or info if none found
+    """
     characters = swapi.fetch_characters()
     if not characters:
         return {"message": "No characters found to sync"}
@@ -68,6 +85,13 @@ def get_characters(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(10, gt=0, le=100, description="Number of records to return")
 ):
+    """
+    Retrieve characters from the database.
+
+    - **skip**: Number of records to skip
+    - **limit**: Number of records to return (1–100)
+    - **Returns**: List of characters with related films and starships
+    """
     chars = db.query(Character).offset(skip).limit(limit).all()
     if LOG_FETCHED_OBJECTS and chars:
         logging.info("Fetched: " + " | ".join(c.name for c in chars))
@@ -87,6 +111,12 @@ def get_characters(
 @router.post("/sync/films")
 @safe_route
 def sync_films(db: Session = Depends(get_db)):
+    """
+    Fetch films from SWAPI and store them in the database.
+
+    - **db**: Database session
+    - **Returns**: Message with number of films synced or info if none found
+    """
     films = swapi.fetch_films()
     if not films:
         return {"message": "No films found to sync"}
@@ -100,6 +130,13 @@ def get_films(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(10, gt=0, le=100, description="Number of records to return")
 ):
+    """
+    Retrieve films from the database.
+
+    - **skip**: Number of records to skip
+    - **limit**: Number of records to return (1–100)
+    - **Returns**: List of films with related characters and starships
+    """
     films = db.query(Film).offset(skip).limit(limit).all()
     if LOG_FETCHED_OBJECTS and films:
         logging.info("Fetched: " + " | ".join(f.title for f in films))
@@ -119,6 +156,12 @@ def get_films(
 @router.post("/sync/starships")
 @safe_route
 def sync_starships(db: Session = Depends(get_db)):
+    """
+    Fetch starships from SWAPI and store them in the database.
+
+    - **db**: Database session
+    - **Returns**: Message with number of starships synced or info if none found
+    """
     starships = swapi.fetch_starships()
     if not starships:
         return {"message": "No starships found to sync"}
@@ -132,6 +175,13 @@ def get_starships(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(10, gt=0, le=100, description="Number of records to return")
 ):
+    """
+    Retrieve starships from the database.
+
+    - **skip**: Number of records to skip
+    - **limit**: Number of records to return (1–100)
+    - **Returns**: List of starships with related characters and films
+    """
     starships = db.query(Starship).offset(skip).limit(limit).all()
     if LOG_FETCHED_OBJECTS and starships:
         logging.info("Fetched: " + " | ".join(s.name for s in starships))
@@ -156,6 +206,14 @@ def search_characters(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(10, gt=0, le=100, description="Number of records to return")
 ):
+    """
+    Search characters by name (partial or full).
+
+    - **name**: Name or partial name to search for
+    - **skip**: Number of records to skip
+    - **limit**: Number of records to return
+    - **Returns**: List of matching characters with related films and starships
+    """
     chars = db.query(Character).filter(Character.name.ilike(f"%{name}%")).offset(skip).limit(limit).all()
     if LOG_FETCHED_OBJECTS and chars:
         logging.info("Fetched: " + " | ".join(c.name for c in chars))
@@ -171,7 +229,6 @@ def search_characters(
         for c in chars
     ]
 
-
 @router.get("/films/search")
 @safe_route
 def search_films(
@@ -180,6 +237,14 @@ def search_films(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(10, gt=0, le=100, description="Number of records to return")
 ):
+    """
+    Search films by title (partial or full).
+
+    - **title**: Title or partial title to search for
+    - **skip**: Number of records to skip
+    - **limit**: Number of records to return
+    - **Returns**: List of matching films with related characters and starships
+    """
     films = db.query(Film).filter(Film.title.ilike(f"%{title}%")).offset(skip).limit(limit).all()
     if LOG_FETCHED_OBJECTS and films:
         logging.info("Fetched: " + " | ".join(f.title for f in films))
@@ -195,7 +260,6 @@ def search_films(
         for f in films
     ]
 
-
 @router.get("/starships/search")
 @safe_route
 def search_starships(
@@ -204,6 +268,14 @@ def search_starships(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(10, gt=0, le=100, description="Number of records to return")
 ):
+    """
+    Search starships by name (partial or full).
+
+    - **name**: Name or partial name to search for
+    - **skip**: Number of records to skip
+    - **limit**: Number of records to return
+    - **Returns**: List of matching starships with related characters and films
+    """
     starships = db.query(Starship).filter(Starship.name.ilike(f"%{name}%")).offset(skip).limit(limit).all()
     if LOG_FETCHED_OBJECTS and starships:
         logging.info("Fetched: " + " | ".join(s.name for s in starships))

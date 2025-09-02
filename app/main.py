@@ -1,3 +1,13 @@
+"""
+Main FastAPI application entry point for the SWAPI CRUD API.
+
+Responsibilities:
+- Load database configuration from .ini file or environment variables
+- Initialize database connection
+- Create FastAPI app with routes and exception handlers
+- Configure logging
+"""
+
 import os
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
@@ -11,7 +21,15 @@ from app.db_exceptions import handle_db_exception
 
 # -------------------- Configuration Loader --------------------
 def load_configuration() -> dict:
-    """Load DB configuration from .ini file or environment variables."""
+    """
+    Load database configuration from a .ini file or fallback to environment variables.
+
+    Returns:
+        dict: dictionary with keys 'DB_USER', 'DB_PASSWORD', 'DB_HOST', 'DB_NAME', 'DB_PORT'
+
+    Raises:
+        RuntimeError: if required DB configuration variables are missing
+    """
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     ini_path = os.path.join(project_root, ".ini")
     logging.info(f"Looking for config.ini at: {ini_path}")
@@ -45,7 +63,16 @@ def load_configuration() -> dict:
 
 # -------------------- Database Initializer --------------------
 def initialize_database(config: dict):
-    """Initialize the database connection."""
+    """
+    Initialize the database connection using provided configuration.
+
+    Args:
+        config (dict): database configuration dictionary with keys:
+                       DB_USER, DB_PASSWORD, DB_HOST, DB_NAME, DB_PORT
+
+    Raises:
+        Exception: propagates any exception raised by init_db
+    """
     try:
         init_db(
             config["DB_USER"],
@@ -61,16 +88,38 @@ def initialize_database(config: dict):
 
 # -------------------- FastAPI App Factory --------------------
 def create_app(config: dict = None) -> FastAPI:
-    """Factory to create FastAPI app with exception handlers and routes."""
+    """
+    Factory to create FastAPI app with logging, routes, and exception handlers.
+
+    Args:
+        config (dict, optional): database configuration. If provided, DB will be initialized.
+
+    Returns:
+        FastAPI: configured FastAPI application instance
+    """
     # Setup logging
     setup_logging(log_to_terminal=True, log_to_file=True)
 
-    app = FastAPI(title="SWAPI CRUD API")
+    app = FastAPI(
+        title="SWAPI CRUD API",
+        description="""
+        This API allows you to interact with Star Wars data.
+
+        Features:
+        - CRUD operations
+        - Database management
+        - Logging and error handling
+        """,
+        version="1.0.0",
+        contact={"name": "vamartid", "email": "vamartid@gmail.com"},
+        license_info={"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
+    )
     app.include_router(swapi_routes.router)
 
     # Exception handlers
     @app.exception_handler(SQLAlchemyError)
     async def db_exception_handler(request: Request, exc: SQLAlchemyError):
+        """Handle SQLAlchemy database errors"""
         logging.error(f"Database error: {exc}")
         return JSONResponse(
             status_code=500,
@@ -79,11 +128,13 @@ def create_app(config: dict = None) -> FastAPI:
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
+        """Handle FastAPI HTTP exceptions"""
         logging.warning(f"HTTP Exception: {exc.detail}")
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
     @app.exception_handler(Exception)
     async def general_exception_handler(request: Request, exc: Exception):
+        """Handle all other unhandled exceptions"""
         logging.error(f"Unhandled error: {exc}")
         return JSONResponse(status_code=500, content={"detail": "Internal server error. Check logs."})
 
